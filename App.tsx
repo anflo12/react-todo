@@ -1,21 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+
+import MainNavigation from "./navigation/MainNavigation";
+import { openDatabase } from "./dbSqlite/db";
+import {  useStoreAll } from "./zustand-state-manager/TaskStore";
 
 export default function App() {
+  const db = openDatabase();
+  const { tasks, loadTasks } = useStoreAll((state) => state);
+  useEffect(() => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY AUTOINCREMENT, done int ,name TEXT, deadline TEXT, startTime TEXT ,endTime TEXT, remind TEXT, repeat TEXT )",
+     [],
+      
+      (error=>console.log(error))
+  
+      );
+    },(error)=>console.log(error));
+
+    if (tasks.length === 0) {
+      db.transaction((tx) => {
+        tx.executeSql("select * from items", [], (_, { rows }) =>
+          loadTasks(rows)
+        );
+      });
+    }
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <MainNavigation />
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
